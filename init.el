@@ -13,7 +13,6 @@
 ;; Make ESC quit prompts
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 
-
 ;; Initialize package sources
 (require 'package)
 
@@ -48,9 +47,9 @@
     :prefix "SPC"
     :global-prefix "C-SPC"))
 
-;; Font
+;; Fonts
 (cond ((eq system-type 'gnu/linux)
-       (set-face-attribute 'default nil :font "MesloLGSDZ Nerd Font" :height 130)
+       (set-face-attribute 'default nil :font "MesloLGSDZ Nerd Font" :height 140)
        (set-face-attribute 'variable-pitch nil
 			   :font "Source Sans Pro" :height 140))
       ((eq system-type 'darwin)
@@ -64,7 +63,7 @@
 (use-package doom-modeline
   :ensure t
   :init (doom-modeline-mode 1)
-  :custom ((doom-modeline-height 15)))
+  :custom ((doom-modeline-height 20)))
 
 (use-package all-the-icons
   :ensure t)
@@ -89,11 +88,17 @@
          :map ivy-reverse-i-search-map
          ("C-k" . ivy-previous-line)
          ("C-d" . ivy-reverse-i-search-kill))
-  :config
+  :init
   (ivy-mode 1)
+  :config
+  (setq ivy-wrap t)
   (setq +ivy-buffer-preview t)
   (setq ivy-count-format "(%d/%d) ")
-  (setq ivy-virtual-buffer t))
+  (setq ivy-virtual-buffer t)
+  ;; Set minibuffer height per command
+  (setf (alist-get 'counsel-projectile-rg ivy-height-alist) 15)
+  (setf (alist-get 'swiper ivy-height-alist) 15)
+  (setf (alist-get 'counsel-switch-buffer ivy-height-alist) 8))
   ;; (dr/leader-key
   ;;  "," '(+ivy/switch-workspace-buffer :which-key "switch workspace buffers")
   ;;  "<" '(ivy-switch-buffer :which-key "switch buffers")))
@@ -135,14 +140,20 @@
 
 ;; Line numbers
 (column-number-mode)
+
 (setq display-line-numbers-type 'relative)
-(global-display-line-numbers-mode t)
+
+(defun dr/display-line-numbers-hook ()
+  (display-line-numbers-mode 1)
+  )
+(add-hook 'prog-mode-hook 'dr/display-line-numbers-hook)
+(add-hook 'text-mode-hook 'dr/display-line-numbers-hook)
 
 ;; Disable line numbers for some modes
-(dolist (mode '(org-mode-hook
-                term-mode-hook
-                eshell-mode-hook))
-  (add-hook mode (lambda () (display-line-numbers-mode 0))))
+(defun dr/disable-line-numbers-hook ()
+  (display-line-numbers-mode 0)
+  )
+(add-hook 'org-mode-hook 'dr/disable-line-numbers-hook)
 
 ;; Turn on rainbow-delimiters for every programming mode.
 (use-package rainbow-delimiters
@@ -153,7 +164,7 @@
   (setq evil-want-integration t)
   (setq evil-want-keybinding nil)  ; turn off and use evil-collection below instead
   (setq evil-want-C-u-scroll t)  ; rebind C-u from universal-argument to scroll up
-  (setq evil-want-C-i-jump t)
+  (setq evil-want-C-i-jump t)  ; C-i to jump forward (inverse of C-o)
   (setq evil-want-fine-undo t
         undo-limit 80000000)
   :config
@@ -181,6 +192,7 @@
   :custom
   (evil-snipe-scope 'visible))
 
+;; hydra for repetition
 (use-package hydra)
 
 (defhydra hydra-text-scale (:timeout 4)
@@ -276,10 +288,11 @@
                 (org-level-2 . 1.1)
                 (org-level-3 . 1.05)
                 (org-level-4 . 1.0)
-                (org-level-5 . 1.1)
-                (org-level-6 . 1.1)
-                (org-level-7 . 1.1)
-                (org-level-8 . 1.1))))
+                (org-level-5 . 1.0)
+                (org-level-6 . 1.0)
+                (org-level-7 . 1.0)
+                (org-level-8 . 1.0)))
+  (set-face-attribute (car face) nil :weight 'regular :height (cdr face)))
 
 ;; Ensure fixed-pitch faces for select org-mode areas.
 (set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
@@ -309,7 +322,8 @@
 (dr/leader-key
  ;; buffers
  "b" '(:ignore t :which-key "buffer+")
- "bb" '(counsel-ibuffer :which-key "switch buffer")
+ "bb" '(counsel-switch-buffer :which-key "switch buffer")
+ "," '(counsel-switch-buffer :which-key "switch buffer")
  "bk" '(kill-current-buffer :which-key "Kill current buffer")
  "bn" 'evil-next-buffer
  "b]" 'evil-next-buffer
@@ -319,6 +333,7 @@
  "f" '(:ignore t :which-key "file+")
  "fs" '(save-buffer :which-key "save file")
  "ff" '(find-file :which-key "find file")
+ "." '(find-file :which-key "find file")
  ;;search
  "s" '(:ignore t :which-key "search+")
  ;; toggles
