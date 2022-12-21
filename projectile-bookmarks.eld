@@ -1,1 +1,0 @@
-("~/.config/emacs-from-scratch/" "~/.config/doom/" "~/repos/cs61a/" "~/repos/qmk_firmware/" "~/repos/cameractrls/" "~/repos/scripts/" "~/repos/library-fa22/" "~/repos/hours_logger/" "~/repos/dnr-hugo/" "~/repos/cupper-hugo-theme/" "~/repos/cs61b/")

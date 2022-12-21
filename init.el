@@ -46,14 +46,17 @@
   (general-create-definer dr/leader-key
     :keymaps '(normal insert visual emacs)
     :prefix "SPC"
-    :global-prefix "C-SPC")
-  ;; Example use of the general definer:
-  (dr/leader-key
-   "t"  '(:ignore t :which-key "toggle")
-   "tt" '(counsel-load-theme :which-key "choose theme")))
+    :global-prefix "C-SPC"))
 
-; Font
-(set-face-attribute 'default nil :font "MesloLGSDZ Nerd Font" :height 140)
+;; Font
+(cond ((eq system-type 'gnu/linux)
+       (set-face-attribute 'default nil :font "MesloLGSDZ Nerd Font" :height 130)
+       (set-face-attribute 'variable-pitch nil
+			   :font "Source Sans Pro" :height 140))
+      ((eq system-type 'darwin)
+       (set-face-attribute 'default nil :font "SauceCodePro Nerd Font Mono" :height 140)
+       (set-face-attribute 'variable-pitch nil
+			   :font "Source Sans Pro" :height 150)))
 
 (use-package doom-themes
   :init (load-theme 'doom-one t))  ; t is to avoid prompt to load theme
@@ -88,8 +91,9 @@
          ("C-d" . ivy-reverse-i-search-kill))
   :config
   (ivy-mode 1)
-  (setq ivy-use-virtual-buffers t)
-)
+  (setq +ivy-buffer-preview t)
+  (setq ivy-count-format "(%d/%d) ")
+  (setq ivy-virtual-buffer t))
   ;; (dr/leader-key
   ;;  "," '(+ivy/switch-workspace-buffer :which-key "switch workspace buffers")
   ;;  "<" '(ivy-switch-buffer :which-key "switch buffers")))
@@ -131,6 +135,7 @@
 
 ;; Line numbers
 (column-number-mode)
+(setq display-line-numbers-type 'relative)
 (global-display-line-numbers-mode t)
 
 ;; Disable line numbers for some modes
@@ -149,6 +154,8 @@
   (setq evil-want-keybinding nil)  ; turn off and use evil-collection below instead
   (setq evil-want-C-u-scroll t)  ; rebind C-u from universal-argument to scroll up
   (setq evil-want-C-i-jump t)
+  (setq evil-want-fine-undo t
+        undo-limit 80000000)
   :config
   (evil-mode 1)
   (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
@@ -164,6 +171,15 @@
   :after evil
   :config
   (evil-collection-init))
+
+(use-package evil-snipe
+  :after evil
+  :config
+  (evil-snipe-mode +1)
+  :hook
+  (magit-mode . 'turn-off-evil-snipe-override-mode)
+  :custom
+  (evil-snipe-scope 'visible))
 
 (use-package hydra)
 
@@ -196,7 +212,9 @@
   (setq projectile-switch-project-action #'projectile-find-file))
 
 (use-package counsel-projectile
-  :config (counsel-projectile-mode))
+  :config
+  (counsel-projectile-mode)
+  (setq ivy-initial-inputs-alist nil))
 ;; Now press alt-o for actions on highlighted selection during projectile action
 
 ;; Projectile bindings
@@ -204,7 +222,7 @@
  "p" '(:ignore t :which-key "project+")
  "pa" '(projectile-add-known-project :which-key "add project")
  "pF" '(counsel-projectile-rg :which-key "ripgrep in files")
- "pp" '(counsel-projectile :which-key "Switch to project")
+ "pp" '(projectile-switch-project :which-key "Switch to project")
  "pf" '(counsel-projectile-find-file :which-key "Find file")
  "pd" '(projectile-find-dir :whick-key "Find project directory")
  "pb" '(counsel-projectile-switch-to-buffer :which-key "Switch to project buffer"))
@@ -220,15 +238,106 @@
  "g" '(:ignore t :which-key "git+")
  "gg" '(magit-status :which-key "magit status"))
 
+;; Org Mode
+(defun dr/org-mode-setup ()
+  (org-indent-mode)
+  (variable-pitch-mode 1)
+  (visual-line-mode 1)
+  (auto-fill-mode 0)
+  (setq eivl-auto-indent nil)
+  (diminish org-indent-mode))
+
+(require 'org-indent)
+
+(use-package org
+  :defer t
+  :hook (org-mode . dr/org-mode-setup)
+  :config
+  (setq org-ellipsis " ▾"
+	org-hide-emphasis-markers t
+	org-src-fontify-natively t
+	org-fontify-quote-and-verse-blocks t
+        org-src-tab-acts-natively t
+        org-edit-src-content-indentation 2
+        org-hide-block-startup nil
+        org-src-preserve-indentation nil
+        org-startup-folded 'content
+        org-cycle-separator-lines 2))
+
+(use-package org-superstar
+  :after org
+  :hook (org-mode . org-superstar-mode)
+  :custom
+  (org-superstar-remove-leading-stars t)
+  (org-superstar-headline-bullets-list '("◉" "○" "◌" "⁖" "◿")))
+
+;; Set headings face sizes.
+(dolist (face '((org-level-1 . 1.2)
+                (org-level-2 . 1.1)
+                (org-level-3 . 1.05)
+                (org-level-4 . 1.0)
+                (org-level-5 . 1.1)
+                (org-level-6 . 1.1)
+                (org-level-7 . 1.1)
+                (org-level-8 . 1.1))))
+
+;; Ensure fixed-pitch faces for select org-mode areas.
+(set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
+(set-face-attribute 'org-table nil  :inherit 'fixed-pitch)
+(set-face-attribute 'org-formula nil  :inherit 'fixed-pitch)
+(set-face-attribute 'org-code nil   :inherit '(shadow fixed-pitch))
+(set-face-attribute 'org-indent nil :inherit '(org-hide fixed-pitch))
+(set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+(set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+(set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+(set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch)
+
+;; Get rid of the background on column views
+(set-face-attribute 'org-column nil :background nil)
+(set-face-attribute 'org-column-title nil :background nil)
+
+;; Set maximum width for org-mode display
+(defun dr/org-mode-visual-fill ()
+  (setq visual-fill-column-width 100
+	visual-fill-column-center-text t)
+  (visual-fill-column-mode 1))
+
+(use-package visual-fill-column
+  :hook (org-mode . dr/org-mode-visual-fill))
+
 ;; Keybindings
 (dr/leader-key
  ;; buffers
  "b" '(:ignore t :which-key "buffer+")
+ "bb" '(counsel-ibuffer :which-key "switch buffer")
  "bk" '(kill-current-buffer :which-key "Kill current buffer")
  "bn" 'evil-next-buffer
  "b]" 'evil-next-buffer
  "bp" 'evil-prev-buffer
- "b[" 'evil-prev-buffer)
+ "b[" 'evil-prev-buffer
+ ;; files
+ "f" '(:ignore t :which-key "file+")
+ "fs" '(save-buffer :which-key "save file")
+ "ff" '(find-file :which-key "find file")
+ ;;search
+ "s" '(:ignore t :which-key "search+")
+ ;; toggles
+ "t"  '(:ignore t :which-key "toggle")
+ "tc" '(comment-line :which-key "comment line")
+ "tn" '(org-toggle-narrow-to-subtree :which-key "Narrow subtree")
+ "tt" '(counsel-load-theme :which-key "choose theme")
+ ;; windows
+ "w" '(:ignore t :which-key "window+")
+ "wb" 'balance-windows
+ "wc" '(delete-window :which-key "close window")
+ "wo" '(delete-other-windows :which-key "delete other windows")
+ "wn" 'evil-window-left
+ "wi" 'evil-window-right
+ "wu" 'evil-window-up
+ "we" 'evil-window-down
+ "wm" 'maximize-window
+ "ws" 'split-window-below
+ "wv" 'split-window-right)
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -236,7 +345,7 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
-   '(evil-magit magit which-key use-package rainbow-delimiters ivy-rich hydra helpful general evil-collection doom-themes doom-modeline counsel-projectile command-log-mode all-the-icons)))
+   '(evil-snipe visual-fill-column org-superstar org-bullets evil-magit magit which-key use-package rainbow-delimiters ivy-rich hydra helpful general evil-collection doom-themes doom-modeline counsel-projectile command-log-mode all-the-icons)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

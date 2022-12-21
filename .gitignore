@@ -2,8 +2,6 @@
 .idea
 *.log
 tmp/
-
-
 projectile-bookmarks.eld
 recentf
 transient/
