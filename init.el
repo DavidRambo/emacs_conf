@@ -8,7 +8,8 @@
 
 (menu-bar-mode -1)      ; Disable the menu bar
 
-(setq visible-bell t)   ; Visible bell
+;; (setq visible-bell t)   ; Visible bell
+(setq ring-bell-function 'ignore)  ; Disable error bell
 
 ;; Make ESC quit prompts
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
@@ -165,6 +166,7 @@
   (setq evil-want-keybinding nil)  ; turn off and use evil-collection below instead
   (setq evil-want-C-u-scroll t)  ; rebind C-u from universal-argument to scroll up
   (setq evil-want-C-i-jump t)  ; C-i to jump forward (inverse of C-o)
+  (setq evil-undo-system 'undo-fu)
   (setq evil-want-fine-undo t
         undo-limit 80000000)
   :config
@@ -178,19 +180,26 @@
   (evil-set-initial-state 'messages-buffer-mode 'normal)
   (evil-set-initial-state 'dashboard-mode 'normal))
 
+(use-package undo-fu)
+
 (use-package evil-collection
   :after evil
   :config
   (evil-collection-init))
 
-(use-package evil-snipe
-  :after evil
-  :config
-  (evil-snipe-mode +1)
-  :hook
-  (magit-mode . 'turn-off-evil-snipe-override-mode)
-  :custom
-  (evil-snipe-scope 'visible))
+;; (use-package evil-snipe
+;;   :after evil
+;;   :config
+;;   (evil-snipe-mode t)
+;;   :hook
+;;   (magit-mode . 'turn-off-evil-snipe-override-mode)
+;;   :custom
+;;   (evil-snipe-scope 'visible))
+
+
+(use-package avy)
+(define-key evil-normal-state-map (kbd "s") 'avy-goto-char-2-below)
+(define-key evil-normal-state-map (kbd "S") 'avy-goto-char-2-above)
 
 ;; hydra for repetition
 (use-package hydra)
@@ -263,7 +272,8 @@
 
 (use-package org
   :defer t
-  :hook (org-mode . dr/org-mode-setup)
+  :hook 
+    (org-mode . dr/org-mode-setup)
   :config
   (setq org-ellipsis " ▾"
 	org-hide-emphasis-markers t
@@ -274,7 +284,15 @@
         org-hide-block-startup nil
         org-src-preserve-indentation nil
         org-startup-folded 'content
-        org-cycle-separator-lines 2))
+        org-cycle-separator-lines 2)
+
+  (setq org-agenda-files 
+	'("~/notes/tasks.org"))
+
+  (setq org-agenda-start-with-log-mode t)
+  (setq org-log-done 'time)
+  (setq org-log-into-drawer t)
+  )
 
 (use-package org-superstar
   :after org
@@ -336,6 +354,7 @@
  "." '(find-file :which-key "find file")
  ;;search
  "s" '(:ignore t :which-key "search+")
+ "sb" '(swiper :which-key "search buffer")
  ;; toggles
  "t"  '(:ignore t :which-key "toggle")
  "tc" '(comment-line :which-key "comment line")
@@ -360,7 +379,7 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
-   '(evil-snipe visual-fill-column org-superstar org-bullets evil-magit magit which-key use-package rainbow-delimiters ivy-rich hydra helpful general evil-collection doom-themes doom-modeline counsel-projectile command-log-mode all-the-icons)))
+   '(undo-fu evil-snipe visual-fill-column org-superstar org-bullets evil-magit magit which-key use-package rainbow-delimiters ivy-rich hydra helpful general evil-collection doom-themes doom-modeline counsel-projectile command-log-mode all-the-icons)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
