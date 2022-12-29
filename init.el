@@ -276,7 +276,8 @@
   (visual-line-mode 1)
   (auto-fill-mode 0)
   (setq evil-auto-indent nil)
-  (diminish org-indent-mode))
+  (diminish org-indent-mode)
+  (lambda () (display-line-numbers-mode 0)))
 
 (defun dr/org-font-setup ()
   ;; Set headings face sizes.
@@ -296,8 +297,6 @@
   :defer t
   :hook 
     (org-mode . dr/org-mode-setup)
-    ;; (org-mode . dr/disable-line-numbers-hook)
-    (org-mode . (lambda () (display-line-numbers-mode 0)))
   :config
   (setq org-ellipsis " ▾"
 	org-hide-emphasis-markers t

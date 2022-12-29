@@ -1,5 +1,5 @@
 #+title: Emacs Configuration
-#+PROPRETY: header-args:emacs-lisp :tangle ./init.el :mkdirp yes
+#+PROPERTY: header-args :tangle ./init.el
 
 Following along with System Crafter's Emacs From Scratch series.
 
@@ -243,7 +243,7 @@ Depending on the source for ivy, swiper may not be included.
 
 #+begin_src elisp
 (use-package ivy
-  :diminish
+  :diminish ivy
   :bind (("C-s" . swiper)
          :map ivy-minibuffer-map
          ("TAB" . ivy-partial)
@@ -267,10 +267,11 @@ Depending on the source for ivy, swiper may not be included.
   ;; Set minibuffer height per command
   (setf (alist-get 'counsel-projectile-rg ivy-height-alist) 15)
   (setf (alist-get 'swiper ivy-height-alist) 15)
-  (setf (alist-get 'counsel-switch-buffer ivy-height-alist) 8))
+  (setf (alist-get 'counsel-switch-buffer ivy-height-alist) 8)
+  (add-to-list 'ivy-re-builders-alist '(counsel-projectile-find-file . ivy--regex-plus)))
   ;; (dr/leader-key
   ;;  "," '(+ivy/switch-workspace-buffer :which-key "switch workspace buffers")
-  ;;  "<" '(ivy-switch-buffer :which-key "switch buffers")))
+  ;;  "<" '(ivy-switch-buffer :which-key "switch buffers"))
 
 ;; Short descriptions next to ivy choices.
 (use-package ivy-rich
@@ -382,13 +383,14 @@ Now press alt-o for actions on highlighted selection during projectile action
 * Org Mode
 ** Org setup functions
 #+begin_src elisp
-(defun dr/org-mode-setup ()
-  (org-indent-mode)
-  (variable-pitch-mode 1)
-  (visual-line-mode 1)
-  (auto-fill-mode 0)
-  (setq eivl-auto-indent nil)
-  (diminish org-indent-mode))
+  (defun dr/org-mode-setup ()
+    (org-indent-mode)
+    (variable-pitch-mode 1)
+    (visual-line-mode 1)
+    (auto-fill-mode 0)
+    (setq evil-auto-indent nil)
+    (diminish org-indent-mode)
+    (lambda () (display-line-numbers-mode 0)))
 #+end_src
 (require 'org-indent)
 
@@ -495,11 +497,21 @@ Set maximum width for org-mode display
   (org-superstar-headline-bullets-list '("◉" "○" "◌" "⁖" "◿")))
 #+end_src
 
+** Configure Babel Languages
+#+begin_src elisp
+(org-babel-do-load-languages
+  'org-babel-load-languages
+  '((emacs-lisp . t)
+    (python . t)))
+
+(push '("conf-unix" . conf-unix) org-src-lang-modes)
+#+end_src
+
 ** Auto-tangle
 #+begin_src elisp
 (defun efs/org-babel-tangle-config ()
   (when (string-equal (buffer-file-name)
-                      (expand-file-name "~/Projects/Code/emacs-from-scratch/Emacs.org"))
+                      (expand-file-name "~/.config/emacs-from-scratch/config.org"))
     ;; Dynamic scoping to the rescue
     (let ((org-confirm-babel-evaluate nil))
       (org-babel-tangle))))
