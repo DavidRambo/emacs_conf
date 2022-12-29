@@ -129,8 +129,9 @@
 
 ;; helpful bindings
 (dr/leader-key
- "hf" '(counsel-describe-function :which-key "describe function")
- "hv" '(counsel-describe-variable :which-key "describe variable"))
+  "h" '(:ignore t :which-key "help")
+  "hf" '(counsel-describe-function :which-key "describe function")
+  "hv" '(counsel-describe-variable :which-key "describe variable"))
 
 ;; Which-key
 (use-package which-key
@@ -139,9 +140,10 @@
   :config
   (setq which-key-idle-delay 0.5))
 
-;; Line numbers
+;; Display column number in modeline
 (column-number-mode)
 
+;; Line numbers
 (setq display-line-numbers-type 'relative)
 
 (defun dr/display-line-numbers-hook ()
@@ -151,10 +153,18 @@
 (add-hook 'text-mode-hook 'dr/display-line-numbers-hook)
 
 ;; Disable line numbers for some modes
+;; The first method worked at first, and it still works within my Doom emacs
+;; config. But now (12/29/2022) the second method (dolist) works, which did
+;; not initially work. After restarting, the second did not work, but running
+;; the first and restarting org-mode did.
 (defun dr/disable-line-numbers-hook ()
   (display-line-numbers-mode 0)
   )
 (add-hook 'org-mode-hook 'dr/disable-line-numbers-hook)
+
+; Now this works...?
+(dolist (mode '(org-mode-hook))
+  (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
 ;; Turn on rainbow-delimiters for every programming mode.
 (use-package rainbow-delimiters
@@ -240,7 +250,7 @@
 
 ;; Projectile bindings
 (dr/leader-key
- "p" '(:ignore t :which-key "project+")
+ "p" '(:ignore t :which-key "project")
  "pa" '(projectile-add-known-project :which-key "add project")
  "pF" '(counsel-projectile-rg :which-key "ripgrep in files")
  "pp" '(projectile-switch-project :which-key "Switch to project")
@@ -256,7 +266,7 @@
 
 ;; magit bindings
 (dr/leader-key
- "g" '(:ignore t :which-key "git+")
+ "g" '(:ignore t :which-key "git")
  "gg" '(magit-status :which-key "magit status"))
 
 ;; Org Mode
@@ -265,8 +275,20 @@
   (variable-pitch-mode 1)
   (visual-line-mode 1)
   (auto-fill-mode 0)
-  (setq eivl-auto-indent nil)
+  (setq evil-auto-indent nil)
   (diminish org-indent-mode))
+
+(defun dr/org-font-setup ()
+  ;; Set headings face sizes.
+  (dolist (face '((org-level-1 . 1.2)
+    (org-level-2 . 1.1)
+    (org-level-3 . 1.05)
+    (org-level-4 . 1.0)
+    (org-level-5 . 1.0)
+    (org-level-6 . 1.0)
+    (org-level-7 . 1.0)
+    (org-level-8 . 1.0)))
+  (set-face-attribute (car face) nil :weight 'regular :height (cdr face))))
 
 (require 'org-indent)
 
@@ -274,6 +296,8 @@
   :defer t
   :hook 
     (org-mode . dr/org-mode-setup)
+    ;; (org-mode . dr/disable-line-numbers-hook)
+    (org-mode . (lambda () (display-line-numbers-mode 0)))
   :config
   (setq org-ellipsis " ▾"
 	org-hide-emphasis-markers t
@@ -289,10 +313,44 @@
   (setq org-agenda-files 
 	'("~/notes/tasks.org"))
 
+  (setq org-todo-keywords
+	'((sequence "TODO(t)" "NEXT(n)" "ACTIVE(a)" "DONE(d!)")
+	  ))
+
+  ;; Custom agenda views
+  (setq org-agenda-custom-commands
+	'(("d" "Dashboard"
+	   ((agenda "" ((org-deadline-warning-days 7)))
+	    (todo "NEXT"
+		  ((org-agenda-overriding-header "Next Tasks")))
+	    (todo "ACTIVE"
+		  ((org-agenda-overriding-header "Active Tasks")))))
+	  ("n" "Next Tasks"
+	   ((todo "NEXT"
+		  ((org-agenda-overriding-header "Next Tasks")))))
+	  ("a" "Active Tasks"
+	   ((todo "ACTIVE"
+		  ((org-agenda-overriding-header "Active Tasks")))))
+	  ))
+
   (setq org-agenda-start-with-log-mode t)
   (setq org-log-done 'time)
   (setq org-log-into-drawer t)
+  (dr/org-font-setup)
   )
+
+;; Org-mode bindings
+;; (use-package evil-org
+;;   :ensure t
+;;   :after org
+;;   :hook ((org-mode . (lambda () evil-org-mode))
+;; 	 ;; (org-agenda-mode . evil-org-mode)
+;; 	 )
+;;   :config
+;;   ;; (evil-org-set-key-theme '(textobjects insert navigation additional shift todo heading))
+;;   (require 'evil-org-agenda)
+;;   (evil-org-agenda-set-keys)
+;;   )
 
 (use-package org-superstar
   :after org
@@ -300,17 +358,6 @@
   :custom
   (org-superstar-remove-leading-stars t)
   (org-superstar-headline-bullets-list '("◉" "○" "◌" "⁖" "◿")))
-
-;; Set headings face sizes.
-(dolist (face '((org-level-1 . 1.2)
-                (org-level-2 . 1.1)
-                (org-level-3 . 1.05)
-                (org-level-4 . 1.0)
-                (org-level-5 . 1.0)
-                (org-level-6 . 1.0)
-                (org-level-7 . 1.0)
-                (org-level-8 . 1.0)))
-  (set-face-attribute (car face) nil :weight 'regular :height (cdr face)))
 
 ;; Ensure fixed-pitch faces for select org-mode areas.
 (set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
@@ -339,7 +386,7 @@
 ;; Keybindings
 (dr/leader-key
  ;; buffers
- "b" '(:ignore t :which-key "buffer+")
+ "b" '(:ignore t :which-key "buffer")
  "bb" '(counsel-switch-buffer :which-key "switch buffer")
  "," '(counsel-switch-buffer :which-key "switch buffer")
  "bk" '(kill-current-buffer :which-key "Kill current buffer")
@@ -348,12 +395,15 @@
  "bp" 'evil-prev-buffer
  "b[" 'evil-prev-buffer
  ;; files
- "f" '(:ignore t :which-key "file+")
+ "f" '(:ignore t :which-key "file")
  "fs" '(save-buffer :which-key "save file")
  "ff" '(find-file :which-key "find file")
  "." '(find-file :which-key "find file")
+ ;; org-mode
+ "o" '(:ignore t :which-key "org")
+ "oa" '(org-agenda :which-key "org-agenda")
  ;;search
- "s" '(:ignore t :which-key "search+")
+ "s" '(:ignore t :which-key "search")
  "sb" '(swiper :which-key "search buffer")
  ;; toggles
  "t"  '(:ignore t :which-key "toggle")
@@ -361,7 +411,7 @@
  "tn" '(org-toggle-narrow-to-subtree :which-key "Narrow subtree")
  "tt" '(counsel-load-theme :which-key "choose theme")
  ;; windows
- "w" '(:ignore t :which-key "window+")
+ "w" '(:ignore t :which-key "window")
  "wb" 'balance-windows
  "wc" '(delete-window :which-key "close window")
  "wo" '(delete-other-windows :which-key "delete other windows")
@@ -379,7 +429,7 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
-   '(undo-fu evil-snipe visual-fill-column org-superstar org-bullets evil-magit magit which-key use-package rainbow-delimiters ivy-rich hydra helpful general evil-collection doom-themes doom-modeline counsel-projectile command-log-mode all-the-icons)))
+   '(evil-org undo-fu evil-snipe visual-fill-column org-superstar org-bullets evil-magit magit which-key use-package rainbow-delimiters ivy-rich hydra helpful general evil-collection doom-themes doom-modeline counsel-projectile command-log-mode all-the-icons)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
